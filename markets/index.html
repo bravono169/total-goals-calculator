@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123e37">
+  <meta name="description" content="输入同一场比赛的赛前欧赔、竞彩让球胜平负和亚洲让球盘，查看三个市场的概率和方向。">
+  <title>赛前盘口分析器</title>
+  <link rel="stylesheet" href="./style.css">
+  <script defer src="./model-loader.js"></script>
+  <script defer src="./history-core.js"></script>
+  <script defer src="./engine.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <header class="mast">
+    <div class="container mast-content">
+      <a class="sibling" href="https://bravono169.github.io/total-goals-calculator/">总进球概率计算器</a>
+      <h1>赛前盘口分析器</h1>
+      <p>输入一场比赛的赛前报价，查看胜平负、让球胜平负和亚盘方向。</p>
+      <div aria-hidden="true" class="pitch"><i></i></div>
+    </div>
+  </header>
+  <main class="container layout">
+    <noscript>请启用 JavaScript 以加载计算功能。</noscript>
+    <form id="quotes" class="card" novalidate autocomplete="off">
+      <div class="card-cap"><h2>比赛赔率</h2><button type="button" class="sample" id="example">填入示例</button></div>
+      <p class="hint">请统一主客队顺序。每种盘口的初盘与即时盘取自同一家公司，即时盘指开赛前的最新报价。</p>
+      <fieldset>
+        <legend>胜平负欧赔</legend>
+        <div class="odds-block" id="euro-fields"></div>
+      </fieldset>
+      <fieldset>
+        <legend>竞彩官方让球胜平负</legend>
+        <div id="official-line"></div>
+        <div class="odds-block" id="official-fields"></div>
+      </fieldset>
+      <fieldset>
+        <legend>亚洲让球盘</legend>
+        <p class="hint">按主队视角选盘口。负数为主让，正数为主受让。水位采用香港盘净水位，例如十进制赔率 1.92 填 0.92。</p>
+        <div class="ah-slots" id="asian-fields"></div>
+      </fieldset>
+      <div class="form-end">
+        <p id="form-status" class="hint" role="status">正在载入历史统计参数…</p>
+        <div class="controls">
+          <button type="submit" id="analyze" class="primary" disabled>开始分析</button>
+          <button type="button" class="secondary" id="clear">清空</button>
+        </div>
+      </div>
+    </form>
+    <section class="result-area" aria-labelledby="result-heading">
+      <div class="card result-card">
+        <div class="card-cap"><h2 id="result-heading" tabindex="-1">分析结果</h2><span id="sample-tag" hidden>示例数据</span></div>
+        <p id="empty" class="empty">填完三组赛前报价，点击「开始分析」查看方向和概率。</p>
+        <div id="output" hidden></div>
+      </div>
+      <details class="notes">
+        <summary>如何理解方向与概率？</summary>
+        <p>普通胜平负使用常规 90 分钟及伤停补时的比分。官方让球以主队净胜球加官方让球数判定，大于零为让胜，等于零为让平，小于零为让负。主队 -1 球时，主队恰好赢一球就是让平。</p>
+        <p>官方 SP 和欧赔的市场隐含概率均按三项赔率倒数归一化。页面同时给出可用的历史统计估计。各项按完整精度比较，百分比经四舍五入。</p>
+        <p>亚盘按即时盘口结算。四分之一盘拆成相邻两个半球或整数盘口，各占一半。主队 -0.25 球打平为主队输半、客队赢半。方向按赢盘概率（赢全或赢半）比较，表中单列走盘、输半和输全。</p>
+        <p id="study-note"></p>
+        <p id="holdout-note"></p>
+        <p>赔率仅在当前浏览器中计算。</p>
+      </details>
+    </section>
+  </main>
+</body>
+</html>
