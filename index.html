@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#103f39">
+  <meta name="description" content="输入一场比赛的八项总进球赔率，实时查看从高到低的市场隐含概率排名。">
+  <title>总进球概率计算器</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #142e29;
+      --muted: #52645e;
+      --green: #10624f;
+      --line: #d4dfd7;
+      --paper: #f5f7f2;
+      --red: #982b27;
+      font-family: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      font-variant-numeric: tabular-nums;
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body { margin: 0; background: var(--paper); color: var(--ink); }
+    h1, h2, p { margin: 0; }
+    .wrap { width: min(100% - 32px, 1080px); margin: auto; }
+    .hero { background: #103f39; color: #fff; overflow: hidden; }
+    .hero-inner { position: relative; padding: 38px 0 34px; }
+    h1 { position: relative; z-index: 1; font-size: clamp(30px, 5.7vw, 56px); letter-spacing: -.055em; line-height: 1.17; }
+    .hero p { position: relative; z-index: 1; margin-top: 12px; font-size: 14px; color: #d8e9da; }
+    .pitch { color: #77a99b; position: absolute; width: 278px; height: 150px; right: -4px; bottom: -53px; opacity: .44; border: 1.5px solid currentColor; transform: rotate(-16deg); border-radius: 3px; }
+    .pitch::before { content: ""; position: absolute; height: 100%; left: 50%; border-left: 1px solid; }
+    .pitch::after { content: ""; position: absolute; width: 46px; height: 46px; left: 50%; top: 50%; border: 1px solid; border-radius: 50%; transform: translate(-50%, -50%); }
+    .pitch i { position: absolute; right: 0; top: 34px; width: 46px; height: 80px; border: 1px solid; border-right: 0; }
+    .pitch i:last-child { right: auto; left: 0; transform: rotate(180deg); }
+    main { padding-top: 20px; padding-bottom: 40px; }
+    .layout { display: grid; gap: 14px; align-items: start; }
+    .panel { min-width: 0; padding: 19px; background: #fff; border: 1px solid var(--line); border-radius: 16px; }
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    h2 { font-size: 21px; font-weight: 750; line-height: 1.35; letter-spacing: -.04em; }
+    .count, .sort-label { flex: none; font-size: 12px; color: var(--muted); }
+    .count { padding: 4px 9px; border-radius: 20px; background: #eef4ed; }
+    .hint { margin-top: 8px; font-size: 13px; line-height: 1.65; color: var(--muted); }
+    .grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px 8px; margin: 20px 0 9px; }
+    label { display: block; font-size: 14px; font-weight: 650; }
+    label span { display: block; margin-bottom: 5px; }
+    input { width: 100%; min-width: 0; padding: 8px; min-height: 46px; line-height: 1.25; font: inherit; font-size: 17px; font-weight: 500; color: var(--ink); border: 1px solid #b4c5b9; border-radius: 8px; background: #fafcf8; }
+    input::placeholder { color: #829388; }
+    input[aria-invalid=true] { border-color: var(--red); background: #fff4f0; }
+    :focus-visible { outline: 3px solid #428781; outline-offset: 2px; }
+    button { cursor: pointer; min-height: 44px; padding: 5px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--green); font: inherit; font-size: 14px; font-weight: 650; }
+    button:disabled { cursor: default; color: #78827d; }
+    button:not(:disabled):hover { background: #e6f0e7; }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+    .actions .example { background: #eaf3e8; border-color: transparent; }
+    .err { font-size: 13px; line-height: 1.6; color: var(--red); margin: 9px 0; }
+    .result-placeholder { display: grid; place-items: center; min-height: 115px; margin-top: 16px; text-align: center; padding: 18px; background: #f4f7f1; border: 1px dashed #c7d7ca; border-radius: 12px; font-size: 14px; line-height: 1.7; color: var(--muted); }
+    .leader { margin: 15px 0; padding: 16px; color: #fff; background: var(--green); border-radius: 12px; }
+    .leader-label { color: #d5edd9; font-size: 12px; }
+    .leader-values { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-top: 5px; }
+    #winner { font-size: 23px; font-weight: 700; }
+    #leading-percent { font-size: 24px; font-weight: 650; }
+    ol { padding: 0; margin: 0; list-style: none; }
+    li { display: grid; grid-template-columns: 2ch 4ch minmax(28px, 1fr) 7ch; gap: 9px; align-items: center; min-height: 37px; font-size: 14px; }
+    .rank { font-size: 12px; color: var(--muted); }
+    .goals { white-space: nowrap; font-weight: 650; }
+    .track { display: block; overflow: hidden; height: 7px; border-radius: 4px; background: #eaf0e9; }
+    .fill { display: block; height: 100%; background: #789e8c; border-radius: inherit; }
+    li.first .fill { background: #146950; }
+    .prob { font-weight: 600; text-align: right; }
+    details { margin-top: 14px; padding: 0 16px; border: 1px solid var(--line); border-radius: 12px; color: var(--muted); }
+    summary { cursor: pointer; padding: 13px 0; font-size: 14px; font-weight: 650; color: var(--ink); }
+    details p { margin: 0 0 14px; font-size: 14px; line-height: 1.7; }
+    .sr { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+    @media (max-width: 580px) {
+      .pitch { right: -184px; opacity: .25; }
+    }
+    @media (max-width: 355px) {
+      .wrap { width: calc(100% - 20px); }
+      .panel { padding: 14px; }
+      input { padding: 6px; }
+    }
+    @media (min-width: 780px) {
+      main { padding-top: 32px; }
+      .hero-inner { padding: 60px 0 50px; }
+      .pitch { right: 30px; }
+      .layout { grid-template-columns: 1fr 1fr; gap: 20px; }
+      .panel { padding: 26px; }
+      .grid { gap: 20px 12px; }
+      li { min-height: 42px; }
+    }
+  </style>
+  <script src="odds-core.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap hero-inner">
+      <h1>总进球概率计算器</h1>
+      <p>用一场比赛的八项赔率，查看总进球数的可能性。</p>
+      <div class="pitch" aria-hidden="true"><i></i><i></i></div>
+    </div>
+  </header>
+  <main class="wrap">
+    <noscript>请在浏览器启用 JavaScript，以计算赔率对应的概率。</noscript>
+    <div class="layout">
+      <section class="panel" aria-labelledby="input-title">
+        <div class="section-head">
+          <h2 id="input-title">输入赔率</h2>
+          <span class="count" id="count">已填 0 / 8</span>
+        </div>
+        <p class="hint" id="input-hint">请使用同场、同来源、同一时点的十进制赔率。也可在任一格按顺序粘贴八项，用空格、逗号或斜杠分隔。</p>
+        <div class="grid" id="grid" aria-describedby="input-hint"></div>
+        <p class="err" id="error" role="alert" hidden></p>
+        <div class="actions">
+          <button type="button" class="example" id="example">填入示例</button>
+          <button type="button" id="clear" disabled>清空</button>
+        </div>
+      </section>
+      <section class="panel" id="results" aria-labelledby="result-title">
+        <div class="section-head">
+          <h2 id="result-title">概率排名</h2><span class="sort-label">从高到低 ↓</span>
+        </div>
+        <div class="result-placeholder" id="empty">填完八项赔率后，这里会显示进球数排名。</div>
+        <div id="computed" hidden>
+          <div class="leader">
+            <p class="leader-label" id="leading-label">最可能的总进球数</p>
+            <div class="leader-values"><strong id="winner"></strong><span id="leading-percent"></span></div>
+          </div>
+          <ol id="ranking" aria-label="各进球数的市场隐含概率"></ol>
+        </div>
+        <p role="status" class="sr" id="announcement"></p>
+      </section>
+    </div>
+    <details>
+      <summary>这些概率怎么算？</summary>
+      <p>分别取八项赔率的倒数，再将每项除以全部倒数之和，得到合计 100% 的市场隐含概率。排名使用未四舍五入的数值，相同赔率并列。页面显示到小数点后两位。</p>
+      <p>7+ 包含 7 球及以上。各项均指常规 90 分钟及伤停补时。这里展示赔率反映的市场估计，实际赛果仍有不确定性。输入和计算均在本机浏览器内完成。</p>
+    </details>
+  </main>
+</body>
+</html>
