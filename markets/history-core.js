@@ -41,6 +41,23 @@
     return exp.map(v => v / sum);
   }
 
+  function observedCohort(cohorts, mode, line, x) {
+    const data = mode === 'full' ? cohorts?.full?.[String(Math.round(line * 4))] : cohorts?.euro;
+    if (!data) return null;
+    const neighbors = data.centers.map(g => ({
+      group: g, distance: Math.sqrt(g.x.reduce((s, v, i) => s + (v - x[i]) ** 2, 0))
+    })).sort((a, b) => a.distance - b.distance);
+    if (!neighbors.length || neighbors[0].distance > data.radius + tolerance) return null;
+    const counts = Array(13).fill(0);
+    let n = 0;
+    for (const {group} of neighbors) {
+      n += group.n;
+      group.counts.forEach((v, i) => { counts[i] += v; });
+      if (n >= cohorts.minN) break;
+    }
+    return n >= cohorts.minN ? {n, margins: counts.map(v => v / n)} : null;
+  }
+
   function predict(model, input) {
     if (model?.version !== 1 || !model.models?.full || !model.models?.euro) {
       return noEstimate(['个人样本参数未加载。']);
@@ -73,7 +90,8 @@
         const count = fit.lineCounts[String(Math.round(currentAh.line * 4))] || 0;
         if (count < 100) warnings.push('该即时让球线仅有 ' + count + ' 场训练记录，方向判断存在较大不确定性。');
       }
-      return {supported:true, mode, warnings, wd, margins};
+      const cohort = observedCohort(model.cohorts, mode, currentAh?.line, x.slice(1));
+      return {supported:true, mode, warnings, wd, margins, cohort};
     }
     return noEstimate(warnings);
   }

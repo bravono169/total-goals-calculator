@@ -57,10 +57,24 @@
   function analyze(model, input) {
     const openWdl = implied(input.euroOpen);
     const marketWdl = implied(input.euroNow);
-    const official = implied(input.official);
-    checkLine(input.officialLine, 1);
+    const now = input.officialNow || {line: input.officialLine, odds: input.official};
+    const early = input.officialOpen;
+    const official = implied(now.odds);
+    checkLine(now.line, 1);
+    const officialOpenMarket = early ? implied(early.odds) : null;
+    if (early) checkLine(early.line, 1);
     const earlyAh = asianQuote(input.ahOpen);
     const currentAh = asianQuote(input.ahNow);
+    const hhad = early && model?.hhad && root.HhadHistory
+      ? root.HhadHistory.analyze(model.hhad, early.line, early.odds, now.line, now.odds) : null;
+    // These are observed score frequencies from the official-SP cohort. The Asian
+    // quote specifies the settlement line, not a training feature of that cohort.
+    let officialCross = null;
+    if (hhad?.supported && Array.isArray(hhad.observedMargins)) {
+      const observed = settle(hhad.observedMargins, now.line, currentAh.line);
+      officialCross = {n: hhad.sampleN, wdl: observed.wdl, ah: observed.ah};
+    }
+    const spResults = {official, officialOpenMarket, hhad, officialCross};
     const forecast = root.HistoryMargin.predict(model, {
       earlyWdl: input.euroOpen, currentWdl: input.euroNow, earlyAh, currentAh
     });
@@ -74,10 +88,16 @@
     };
     if (!active) {
       if (!info.warning) info.warning = '这组赔率超出历史样本支持范围，胜平负展示即时欧赔折算值。';
-      return {wdl: marketWdl, marketWdl, openWdl, official, histOfficial: null, ah: null, info};
+      return {wdl: marketWdl, marketWdl, openWdl, ...spResults, histOfficial: null, ah: null, cohort: null, info};
     }
-    const mapped = settle(forecast.margins, input.officialLine, currentAh.line);
-    return {...mapped, marketWdl, openWdl, official, info};
+    const mapped = settle(forecast.margins, now.line, currentAh.line);
+    let cohort = null;
+    if (forecast.cohort) {
+      const observed = settle(forecast.cohort.margins, now.line, currentAh.line);
+      cohort = {n: forecast.cohort.n, mode: forecast.mode, wdl: observed.wdl,
+        ahHome: observed.ah.home, ahAway: observed.ah.away};
+    }
+    return {...mapped, marketWdl, openWdl, ...spResults, cohort, info};
   }
 
   root.MatchMarkets = {analyze, settle};

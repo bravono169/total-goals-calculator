@@ -56,6 +56,9 @@ input::placeholder { color:#76897f; }
 .ah-row label { display: block; }
 .ah-row .line-input { margin: 0; }
 .ah-row .line-input label { margin: 0; }
+.official-row { display: grid; grid-template-columns: minmax(0,1.48fr) repeat(3,minmax(0,1fr)); gap: 6px; }
+.official-row label { display: block; }
+.official-row .line-input, .official-row .line-input label { margin: 0; }
 .custom-line { grid-column: 1/-1; margin-top: 5px; }
 .form-end { margin-top: 20px; }
 .controls { display: flex; gap: 8px; margin-top: 9px; }
@@ -73,6 +76,7 @@ button:not(:disabled):hover { filter: brightness(.96); }
 .lead strong { color:#0d563e; font-size:1.08rem; }
 .lead span { font-size:.94rem; font-weight:650; color:#254f3e; }
 .caption { font-size:.86rem; }
+.item h4 { font-size:.93rem; font-weight:650; margin:14px 0 2px; }
 .draw-reference { margin-top:8px; padding:8px 11px; color:#355347; border-left:3px solid #8baa80; background:#f5f8f0; font-size:.87rem; }
 table { width: 100%; border-collapse: collapse; font-size:.91rem; margin-top:8px; }
 th, td { padding:7px 3px; text-align:right; }
